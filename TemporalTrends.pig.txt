@@ -1,0 +1,15 @@
+-- Load the ratings data with correct schema
+ratings = LOAD '/final_project/ratings.csv' USING PigStorage(',')  AS (userId:int, movieId:int, rating:float, tstamp:chararray);
+-- Extract year directly from tstamp
+ratings_by_year = FOREACH ratings GENERATE SUBSTRING(tstamp, LAST_INDEX_OF(tstamp, '/') + 1, 4) AS year, rating;
+-- Group by year
+grouped_ratings = GROUP ratings_by_year BY year;
+
+-- Calculate average rating per year
+avg_rating_per_year = FOREACH grouped_ratings GENERATE group AS year, ROUND_TO(AVG(ratings_by_year.rating), 2) AS avg_rating;
+
+-- Sort results by year
+sorted_results = ORDER avg_rating_per_year BY year;
+
+-- Store the results
+STORE sorted_results INTO '/user/hdoop/avg_rating_per_year' USING PigStorage(',');
